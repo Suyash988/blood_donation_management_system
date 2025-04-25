@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     title: 'Donors',
   };
   
-export default async function Page({
+  export default async function Page({
     searchParams,
   }: {
     searchParams?: {
@@ -23,4 +23,4 @@ export default async function Page({
         <DonorsTable donors={donors} />
       </main>
     );
-  }  
+  }
