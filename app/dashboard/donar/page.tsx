@@ -11,6 +11,8 @@ export default async function Page({
   }: {
     searchParams?: {
       query?: string;
+      page?: string;
+      [key: string]: string | undefined;
     };
   }) {
     const query = searchParams?.query || '';
