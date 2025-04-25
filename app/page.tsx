@@ -25,16 +25,16 @@ export default function Page() {
         <div className="flex items-center justify-center p-6 md:w-3/5 md:px-28 md:py-12">
           {/* Add Hero Images Here */}
           <Image 
-          src="/hero-desktop.png"
+          src="/image.svg"
           width={1000}
           height={760}
-          className='hidden md:block'
+          className='hidden md:block rounded-xl'
           alt='Screenshot of the dashboard project showing desktop version' />
           <Image
-          src="/hero-mobile.png"
+          src="/image.svg"
           width={560}
           height={620}
-          className='block md:hidden'
+          className='block md:hidden rounded-xl'
           alt='Screenshot of the dashboard project showing mobile version'
           />
         </div>

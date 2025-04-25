@@ -1,10 +1,7 @@
 import { Revenue } from './definitions';
 
-export const formatCurrency = (amount: number) => {
-  return (amount / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  });
+export const formatBloodAmount = (amount: number) => {
+  return `${amount.toLocaleString('en-US')} mL`;
 };
 
 export const formatDateToLocal = (
@@ -21,19 +18,64 @@ export const formatDateToLocal = (
   return formatter.format(date);
 };
 
-export const generateYAxis = (revenue: Revenue[]) => {
-  // Calculate what labels we need to display on the y-axis
-  // based on highest record and in 1000s
-  const yAxisLabels = [];
-  const highestRecord = Math.max(...revenue.map((month) => month.revenue));
-  const topLabel = Math.ceil(highestRecord / 1000) * 1000;
+export type HasRevenue = { revenue: number }
+export type HasUnits   = { unitsAvailable: number }
 
-  for (let i = topLabel; i >= 0; i -= 1000) {
-    yAxisLabels.push(`$${i / 1000}K`);
+export const generateYAxis = <T extends HasRevenue | HasUnits>(data: T[]) => {
+  if (data.length === 0) {
+    return { yAxisLabels: [] as string[], topLabel: 0 }
+  }
+
+  // detect which metric we’re charting
+  const first = data[0]!
+  const isRevenue = (first as HasRevenue).revenue !== undefined
+
+  // pull out the values
+  const values = data.map(d =>
+    isRevenue
+      ? (d as HasRevenue).revenue
+      : (d as HasUnits).unitsAvailable
+  )
+
+  // find the max
+  const highest = Math.max(...values)
+
+  // choose step & topLabel
+  let step: number, topLabel: number
+  if (isRevenue) {
+    step = 1000
+    topLabel = Math.ceil(highest / step) * step
+  } else {
+    const segments = 5
+    step = Math.ceil(highest / segments)
+    topLabel = step * segments
+  }
+
+  // build labels array
+  const yAxisLabels: string[] = []
+  for (let v = topLabel; v >= 0; v -= step) {
+    yAxisLabels.push(isRevenue ? `$${v / 1000}K` : `${v}`)
+  }
+
+  return { yAxisLabels, topLabel }
+}
+
+export function generateYAxisForInventory(values: number[], segments = 5) {
+  if (values.length === 0) {
+    return { yAxisLabels: [] as string[], topLabel: 0 };
+  }
+
+  const highest = Math.max(...values);
+  const step = Math.ceil(highest / segments);
+  const topLabel = step * segments;
+
+  const yAxisLabels: string[] = [];
+  for (let v = topLabel; v >= 0; v -= step) {
+    yAxisLabels.push(`${v}`);
   }
 
   return { yAxisLabels, topLabel };
-};
+}
 
 export const generatePagination = (currentPage: number, totalPages: number) => {
   // If the total number of pages is 7 or less,

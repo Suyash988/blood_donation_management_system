@@ -1,31 +1,37 @@
 import {
-  BanknotesIcon,
-  ClockIcon,
+  EyeDropperIcon,
+  TrashIcon,
+  HandRaisedIcon,
   UserGroupIcon,
-  InboxIcon,
+  ArrowTrendingUpIcon,
+  BeakerIcon
 } from '@heroicons/react/24/outline';
 import { lusitana } from '@/app/ui/fonts';
+import { fetchDonationCardData } from '@/app/lib/data';
 
 const iconMap = {
-  collected: BanknotesIcon,
+  collected: EyeDropperIcon,
   customers: UserGroupIcon,
-  pending: ClockIcon,
-  invoices: InboxIcon,
+  pending: TrashIcon,
+  invoices: HandRaisedIcon,
+  released: ArrowTrendingUpIcon,
+  tested: BeakerIcon,
 };
 
 export default async function CardWrapper() {
+  const {numberOfDonations, numberOfDonors,collectedVolume, discardedVolume, releasedVolume, testedVolume} = await fetchDonationCardData();
   return (
     <>
-      {/* NOTE: Uncomment this code in Chapter 9 */}
-
-      {/* <Card title="Collected" value={totalPaidInvoices} type="collected" />
-      <Card title="Pending" value={totalPendingInvoices} type="pending" />
-      <Card title="Total Invoices" value={numberOfInvoices} type="invoices" />
-      <Card
-        title="Total Customers"
-        value={numberOfCustomers}
-        type="customers"
-      /> */}
+              <Card title="Collected" value={collectedVolume} type="collected" />
+              <Card title="Discarded" value={discardedVolume} type="pending" />
+              <Card title="Released" value={releasedVolume} type="released" />
+              <Card title="Tested" value={testedVolume} type="tested" />
+              <Card title="Total Donations" value={numberOfDonations} type="invoices" />
+              <Card
+                title="Total Donors"
+                value={numberOfDonors}
+                type="customers"
+              />
     </>
   );
 }
@@ -37,7 +43,7 @@ export function Card({
 }: {
   title: string;
   value: number | string;
-  type: 'invoices' | 'customers' | 'pending' | 'collected';
+  type: 'invoices' | 'customers' | 'pending' | 'collected' | 'released' | 'tested';
 }) {
   const Icon = iconMap[type];
 

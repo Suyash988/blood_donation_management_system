@@ -1,6 +1,6 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
-import { invoices, customers, revenue, users } from '../lib/placeholder-data';
+import {users, donations, inventory} from '../lib/placeholder-data';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -29,85 +29,110 @@ async function seedUsers() {
   return insertedUsers;
 }
 
-async function seedInvoices() {
+async function seedDonations() {
+  // ensure uuid generation is available
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
+  // create the donations table
   await sql`
-    CREATE TABLE IF NOT EXISTS invoices (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      customer_id UUID NOT NULL,
-      amount INT NOT NULL,
-      status VARCHAR(255) NOT NULL,
-      date DATE NOT NULL
+    CREATE TABLE IF NOT EXISTS donations (
+      id               UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+      -- Donor Information
+      donor_name       VARCHAR(255)   NOT NULL,
+      age              INT            NOT NULL CHECK (age >= 18 AND age <= 65),
+      gender           VARCHAR(10)    NOT NULL CHECK (gender IN ('Male','Female','Other')),
+      blood_group      VARCHAR(5)     NOT NULL CHECK (blood_group IN ('A+','A-','B+','B-','AB+','AB-','O+','O-')),
+      email            VARCHAR(255)   NOT NULL,
+      phone_number     VARCHAR(15)    NOT NULL,
+      aadhaar_number   VARCHAR(12)    NOT NULL,
+      address          TEXT,
+      weight           INT            NOT NULL CHECK (weight >= 50),
+      medical_conditions TEXT,
+      consent          BOOLEAN        NOT NULL DEFAULT false,
+
+      -- Donation Details
+      donation_date    DATE           NOT NULL,
+      amount_ml        INT            NOT NULL CHECK (amount_ml BETWEEN 350 AND 500),
+      status           VARCHAR(50)    NOT NULL CHECK (status IN ('collected','tested','released','discarded')),
+      hemoglobin_level NUMERIC(4,2)   NOT NULL CHECK (hemoglobin_level >= 12.0 AND hemoglobin_level <= 20.0),
+      collection_center VARCHAR(255),
+      remarks          TEXT,
+
+      -- enforce uniqueness so ON CONFLICT works
+      UNIQUE (aadhaar_number, donation_date),
+
+      -- Timestamps
+      created_at       TIMESTAMP      NOT NULL DEFAULT now(),
+      updated_at       TIMESTAMP      NOT NULL DEFAULT now()
     );
   `;
 
-  const insertedInvoices = await Promise.all(
-    invoices.map(
-      (invoice) => sql`
-        INSERT INTO invoices (customer_id, amount, status, date)
-        VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.status}, ${invoice.date})
-        ON CONFLICT (id) DO NOTHING;
-      `,
-    ),
+  // Insert combined data, skipping duplicates by aadhaar+date
+  const insertedRecords = await Promise.all(
+    donations.map(d => sql`
+      INSERT INTO donations (
+        donor_name, age, gender, blood_group,
+        email, phone_number, aadhaar_number, address,
+        weight, medical_conditions, consent,
+        donation_date, amount_ml, status,
+        hemoglobin_level, collection_center, remarks
+      ) VALUES (
+        ${d.donor_name},
+        ${d.age},
+        ${d.gender},
+        ${d.blood_group},
+        ${d.email ?? ''}, -- fallback
+        ${d.phone_number},
+        ${d.aadhaar_number},
+        ${d.address ?? ''}, -- fallback
+        ${d.weight},
+        ${d.medical_conditions ?? ''}, -- fallback
+        ${d.consent ?? false}, -- fallback
+        ${d.donation_date},
+        ${d.amount_ml},
+        ${d.status},
+        ${d.hemoglobin_level},
+        ${d.collection_center ?? ''}, -- fallback
+        ${d.remarks ?? ''} -- fallback
+      )
+      ON CONFLICT (aadhaar_number, donation_date) DO NOTHING;
+    `)
   );
 
-  return insertedInvoices;
+  return insertedRecords;
 }
 
-async function seedCustomers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
+
+async function seedInventory() {
+  // create the inventory table if it doesn't exist
   await sql`
-    CREATE TABLE IF NOT EXISTS customers (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email VARCHAR(255) NOT NULL,
-      image_url VARCHAR(255) NOT NULL
+    CREATE TABLE IF NOT EXISTS inventory (
+      blood_group     VARCHAR(5)    PRIMARY KEY,
+      units_available INT           NOT NULL,
+      last_updated    TIMESTAMP     NOT NULL DEFAULT now()
     );
   `;
 
-  const insertedCustomers = await Promise.all(
-    customers.map(
-      (customer) => sql`
-        INSERT INTO customers (id, name, email, image_url)
-        VALUES (${customer.id}, ${customer.name}, ${customer.email}, ${customer.image_url})
-        ON CONFLICT (id) DO NOTHING;
-      `,
-    ),
+  // bulk-insert the inventory data, skipping any already present
+  const insertedInventory = await Promise.all(
+    inventory.map(item => sql`
+      INSERT INTO inventory (blood_group, units_available)
+      VALUES (${item.blood_group}, ${item.units_available})
+      ON CONFLICT (blood_group) DO NOTHING;
+    `)
   );
 
-  return insertedCustomers;
-}
-
-async function seedRevenue() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS revenue (
-      month VARCHAR(4) NOT NULL UNIQUE,
-      revenue INT NOT NULL
-    );
-  `;
-
-  const insertedRevenue = await Promise.all(
-    revenue.map(
-      (rev) => sql`
-        INSERT INTO revenue (month, revenue)
-        VALUES (${rev.month}, ${rev.revenue})
-        ON CONFLICT (month) DO NOTHING;
-      `,
-    ),
-  );
-
-  return insertedRevenue;
+  return insertedInventory;
 }
 
 export async function GET() {
   try {
     const result = await sql.begin((sql) => [
       seedUsers(),
-      seedCustomers(),
-      seedInvoices(),
-      seedRevenue(),
+      seedDonations(),
+      seedInventory(),
     ]);
 
     return Response.json({ message: 'Database seeded successfully' });
