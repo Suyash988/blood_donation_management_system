@@ -17,7 +17,7 @@ An AI-based blood donation management system that predicts future blood needs.
 🔗 [https://lifeflow-ai.vercel.app](https://lifeflow-ai.vercel.app)
 
 ## 📷 Screenshots
-![Dashboard Screenshot](./images/dashboard.png)
+![Dashboard Screenshot](./public/desktop.png)
 
 ## 🧩 Setup
 ```bash
