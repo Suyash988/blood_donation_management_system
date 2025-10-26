@@ -1,5 +1,27 @@
-## Next.js App Router Course - Starter
+# LifeFlow AI 💉
+An AI-based blood donation management system that predicts future blood needs.
 
-This is the starter template for the Next.js App Router Course. It contains the starting code for the dashboard application.
+## 🚀 Tech Stack
+- Next.js
+- Node.js
+- PostgreSQL
+- Prisma ORM
+- Redis for caching
 
-For more information, see the [course curriculum](https://nextjs.org/learn) on the Next.js Website.
+## ✨ Features
+- Real-time donor tracking
+- Predictive model using machine learning
+- Secure authentication (JWT)
+
+## 🖥️ Live Demo
+🔗 [https://lifeflow-ai.vercel.app](https://lifeflow-ai.vercel.app)
+
+## 📷 Screenshots
+![Dashboard Screenshot](./images/dashboard.png)
+
+## 🧩 Setup
+```bash
+git clone https://github.com/suyashagnihotri/lifeflow-ai.git
+npm install
+npm run dev
+
